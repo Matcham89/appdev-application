@@ -7,7 +7,7 @@ on:
 
 env:
   STATE_BUCKET: 
-  IMAGE_NAME: 
+  IMAGE_NAME: appdev-application-test
   RESOURCE_CLOUD_RUN: 
 
 jobs:
