@@ -7,8 +7,8 @@ on:
 
 env:
   STATE_BUCKET: 
-  IMAGE_NAME: appdev-application-test
-  RESOURCE_CLOUD_RUN: 
+  IMAGE_NAME: appdev-application-hello-world
+  RESOURCE_CLOUD_RUN: appdev-application-test
 
 jobs:
   verify:
@@ -30,14 +30,14 @@ jobs:
       #
 
       - name: Set Variables DEV
-        if: github.ref_name == 'main' || github.ref_name == 'WB-77'
+        if: github.ref_name == 'main'
         run: |
-          echo TARGET_ENVIRONMENT=dev >> $GITHUB_ENV
-          echo PROJECT_ID=dev >> $GITHUB_ENV 
-          echo PROJECT_NUMBER=dev >> $GITHUB_ENV 
-          echo WORKLOAD_IDENTITY_PROVIDER=projects/391620017450/locations/global/workloadIdentityPools/github-pl/providers/github-actions-provider >> $GITHUB_ENV 
+          echo TARGET_ENVIRONMENT="" >> $GITHUB_ENV
+          echo PROJECT_ID="" >> $GITHUB_ENV 
+          echo PROJECT_NUMBER="" >> $GITHUB_ENV 
+          echo WORKLOAD_IDENTITY_PROVIDER="" >> $GITHUB_ENV 
           echo SERVICE_ACCOUNT="" >> $GITHUB_ENV 
-          echo BUCKET_PREFIX=dev >> $GITHUB_ENV
+          echo BUCKET_PREFIX="" >> $GITHUB_ENV
 
       - name: Check env specific variables
         run: |
