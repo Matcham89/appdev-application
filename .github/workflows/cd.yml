@@ -123,7 +123,7 @@ jobs:
             --artifact-url="${{ env.FULL_IMAGE_NAME }}@`cat ./image-sha.txt`" \
             --attestor=projects/${{ steps.tf-outputs.outputs.RESOURCE_PROJECT}}/attestors/attestor-${{ steps.tf-outputs.outputs.RESOURCE_PROJECT }} \
             --keyversion-project=${{ steps.tf-outputs.outputs.RESOURCE_PROJECT }} \
-            --keyversion-location=global \
+            --keyversion-location=${{ steps.tf-outputs.outputs.KEYRING_LOCATION }} \
             --keyversion-keyring=${{ steps.tf-outputs.outputs.KEYRING_NAME }} \
             --keyversion-key=${{ steps.tf-outputs.outputs.KEY_NAME }} \
             --keyversion=${{ steps.tf-outputs.outputs.KEY_VERSION }}
