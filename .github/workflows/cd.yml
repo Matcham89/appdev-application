@@ -174,7 +174,7 @@ jobs:
             --memory=512Mi
             --min-instances=1
             --max-instances=2
-            --service-account=${{ steps.tf-outputs.outputs.CLOUD_RUN_SA_EMAIL_WEBAPP }}
+            --service-account=${{ steps.tf-outputs.outputs.CLOUD_RUN_SA_EMAIL }}
           env_vars: |
             APP_REGION=${{ steps.tf-outputs.outputs.REGION }}
             GOOGLE_CLOUD_PROJECT=${{ steps.tf-outputs.outputs.RESOURCE_PROJECT }}
