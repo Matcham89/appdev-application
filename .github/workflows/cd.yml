@@ -31,7 +31,7 @@ jobs:
           echo PROJECT_ID=${{ secrets.DEV_PROJECT_ID }} >> $GITHUB_ENV 
           echo PROJECT_NUMBER=${{ secrets.DEV_PROJECT_NUMBER }} >> $GITHUB_ENV 
           echo WORKLOAD_IDENTITY_PROVIDER=${{ secrets.DEV_WORKLOAD_IDENTITY_PROVIDER }} >> $GITHUB_ENV 
-          echo DEV_SERVICE_ACCOUNT=${{ secrets.DEV_SERVICE_ACCOUNT }} >> $GITHUB_ENV 
+          echo SERVICE_ACCOUNT=${{ secrets.DEV_SERVICE_ACCOUNT }} >> $GITHUB_ENV 
           echo BUCKET_PREFIX="dev" >> $GITHUB_ENV
 
       - name: Check env specific variables
