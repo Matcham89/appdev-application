@@ -6,7 +6,7 @@ on:
 
 
 env:
-  STATE_BUCKET: 
+  STATE_BUCKET: ${{ secrets.STATE_BUCKET }}
   IMAGE_NAME: appdev-application-hello-world
   RESOURCE_CLOUD_RUN: appdev-application-test
 
@@ -32,12 +32,12 @@ jobs:
       - name: Set Variables DEV
         if: github.ref_name == 'main'
         run: |
-          echo TARGET_ENVIRONMENT="" >> $GITHUB_ENV
-          echo PROJECT_ID="" >> $GITHUB_ENV 
-          echo PROJECT_NUMBER="" >> $GITHUB_ENV 
-          echo WORKLOAD_IDENTITY_PROVIDER="" >> $GITHUB_ENV 
-          echo SERVICE_ACCOUNT="" >> $GITHUB_ENV 
-          echo BUCKET_PREFIX="" >> $GITHUB_ENV
+          echo TARGET_ENVIRONMENT="dev" >> $GITHUB_ENV
+          echo PROJECT_ID=${{ secrets.DEV_PROJECT_ID }} >> $GITHUB_ENV 
+          echo PROJECT_NUMBER=${{ secrets.DEV_PROJECT_NUMBER }} >> $GITHUB_ENV 
+          echo WORKLOAD_IDENTITY_PROVIDER=${{ secrets.DEV_WORKLOAD_IDENTITY_PROVIDER }} >> $GITHUB_ENV 
+          echo DEV_SERVICE_ACCOUNT=${{ secrets.DEV_SERVICE_ACCOUNT }} >> $GITHUB_ENV 
+          echo BUCKET_PREFIX="dev" >> $GITHUB_ENV
 
       - name: Check env specific variables
         run: |
@@ -174,7 +174,7 @@ jobs:
             --port=3000
             --binary-authorization=default
             --allow-unauthenticated
-            --ingress=all
+            --ingress=internal-and-cloud-load-balancing
             --cpu=1
             --memory=512Mi
             --min-instances=1
