@@ -30,8 +30,8 @@ jobs:
           echo TARGET_ENVIRONMENT="dev" >> $GITHUB_ENV
           echo PROJECT_ID=${{ secrets.DEV_PROJECT_ID }} >> $GITHUB_ENV 
           echo PROJECT_NUMBER=${{ secrets.DEV_PROJECT_NUMBER }} >> $GITHUB_ENV 
-          echo WORKLOAD_IDENTITY_PROVIDER=${{ secrets.DEV_WORKLOAD_IDENTITY_PROVIDER }} >> $GITHUB_ENV 
-          echo SERVICE_ACCOUNT=${{ secrets.DEV_SERVICE_ACCOUNT }} >> $GITHUB_ENV 
+          echo WORKLOAD_IDENTITY_PROVIDER=projects/63373401292/locations/global/workloadIdentityPools/github-pl/providers/github-actions-provider >> $GITHUB_ENV 
+          echo SERVICE_ACCOUNT=sa-gha-app-dev-infra-cm@app-dev-infra-cm.iam.gserviceaccount.com >> $GITHUB_ENV 
           echo BUCKET_PREFIX="dev" >> $GITHUB_ENV
 
       - name: Check env specific variables
