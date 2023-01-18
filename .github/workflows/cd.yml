@@ -11,10 +11,6 @@ env:
   RESOURCE_CLOUD_RUN: appdev-application-test
 
 jobs:
-  verify:
-    name: Verify Code
-    runs-on: ubuntu-latest
-
   deploy:
     name: Deployment
     needs: verify
