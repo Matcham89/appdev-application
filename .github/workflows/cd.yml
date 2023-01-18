@@ -6,7 +6,7 @@ on:
 
 
 env:
-  STATE_BUCKET: ${{ secrets.STATE_BUCKET }}
+  STATE_BUCKET: bkt-app-cicd-tfstate
   IMAGE_NAME: appdev-application-hello-world
   RESOURCE_CLOUD_RUN: appdev-application-test
 
