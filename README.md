@@ -6,7 +6,12 @@
 
 <p>&nbsp;</p>
 
+This is made to deploy to the environment built by the repo `appdev-infra` via Terraform.
+
+<p>&nbsp;</p>
+
 This workflow will create and deploy an application to Cloud Run using best practise security methods.
+
 
 * Vulnerability Scanning of the application
 
@@ -23,23 +28,24 @@ From the IaC outputs, the following details need to be updated in the workflow f
 
 `cd.yml` 
 
+* BUCKET_PREFIX
+
 * STATE_BUCKET
 
-* SERVICE_ACCOUNT
+* DEV_SERVICE_ACCOUNT
 
-* WORKLOAD_IDENTITY_PROVIDER
+* DEV_WORKLOAD_IDENTITY_PROVIDER
 
-* PROJECT_NUMBER
+* DEV_PROJECT_NUMBER
 
-* PROJECT_ID
+* DEV_PROJECT_ID
 
-* BUCKET_PREFIX
 
 The image name and resource name need to be decalred as environment variables.
 
 * IMAGE_NAME
 
-* RESOURCE_CLOUD_RUN
+* RESOURCE_CLOUD_RUN (This must match the name previously defined in the deployment by `appdev-infra`)
 
 The details can be found in the outputs from the bootstrap.
 
