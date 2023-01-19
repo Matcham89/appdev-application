@@ -28,18 +28,17 @@ From the IaC outputs, the following details need to be updated in the workflow f
 
 `cd.yml` 
 
-* BUCKET_PREFIX
+* BUCKET_PREFIX _(dev)_
 
-* STATE_BUCKET
+* DEV_SERVICE_ACCOUNT  _(sa-gha-appdev-cm-dev@appdev-cm-dev.iam.gserviceaccount.com)_
 
-* DEV_SERVICE_ACCOUNT
+* DEV_WORKLOAD_IDENTITY_PROVIDER _(projects/37532543929/locations/global/workloadIdentityPools/github-action-pool-dev/providers/github-actions-provider)_
 
-* DEV_WORKLOAD_IDENTITY_PROVIDER
+* DEV_PROJECT_NUMBER _(37532543929)_
 
-* DEV_PROJECT_NUMBER
+* DEV_PROJECT_ID _(appdev-cm-dev)_
 
-* DEV_PROJECT_ID
-
+<p>&nbsp;</p>
 
 The image name and resource name need to be decalred as environment variables.
 
@@ -49,15 +48,42 @@ The image name and resource name need to be decalred as environment variables.
 
 The details can be found in the outputs from the bootstrap.
 
-For authentication into Google Cloud the GitHub actions workflow uses `google-github-actions/auth@v0`
 
- https://github.com/google-github-actions/auth
- 
 <p>&nbsp;</p>
+
+Each workflow references the required GitHub Secrets, so the variable as the same format as the workflow:
+
+DEV_SERVICE_ACCOUNT = ${{ secrets.DEV_SERVICE_ACCOUNT }}
+
+<p>&nbsp;</p>
+
+### Manually Trigger The Workflow
+
+<p>&nbsp;</p>
+
+The workflow includes `on: workflow_dispatch:` which provides a manual trigger for first release.
+
+On the GitHub main page, locate `actions`
+
+Select the workflow `cd-workflow`
+
+Select `Run workflow`
+
+After the inital run, all further changes should be commited through a Pull Request/Merge into `main` to trigger the workflow.
+
+ <p>&nbsp;</p>
+
 
 ### Environment Preparation
 
 The workflow installs the following tools in order to run the CD
+
+<p>&nbsp;</p>
+
+For authentication into Google Cloud the GitHub actions workflow uses `google-github-actions/auth@v0`
+
+ https://github.com/google-github-actions/auth
+ 
 
 <p>&nbsp;</p>
 
