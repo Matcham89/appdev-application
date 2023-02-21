@@ -45,7 +45,7 @@ jobs:
   image_build:
     name: Build Application Image
     needs: get_changed_files
-    if: ${{ needs.get_changed_files.outputs.has_ui_changes == 'true' && github.ref_name == 'main'}}
+    if: ${{ needs.get_changed_files.outputs.has_ui_changes == 'false' && github.ref_name == 'main'}}
     permissions: write-all
     runs-on: ubuntu-latest
     defaults:
@@ -215,7 +215,7 @@ jobs:
 #
   cloud_run_deploy:
     name: Cloud Run Deployment
-    needs: attestation_vulnerability_scan
+    needs: attestation
     permissions: write-all
     runs-on: ubuntu-latest
     defaults:

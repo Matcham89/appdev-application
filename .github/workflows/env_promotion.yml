@@ -189,7 +189,7 @@ jobs:
 #
   cloud_run_deploy_test:
     name: Cloud Run Deployment Test
-    needs: attestation_vulnerability_scan
+    needs: attestation
     permissions: write-all
     runs-on: ubuntu-latest
     defaults:
