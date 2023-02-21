@@ -162,6 +162,10 @@ jobs:
         uses: google-github-actions/setup-gcloud@v1
         with:
           install_components: beta
+      - name: Get Image Digest
+        run: |
+          gcloud artifacts docker images describe ${{ env.FULL_IMAGE_NAME }}:${{ env.SHA_IMAGE_TAG }} --format 'value(image_summary.digest)' > ./image-sha.txt
+          cat image-sha.txt
       - name: Binary Auth Stage
         run: |
           gcloud beta container binauthz attestations sign-and-create \
