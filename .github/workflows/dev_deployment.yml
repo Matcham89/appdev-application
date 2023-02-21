@@ -1,0 +1,284 @@
+name: 'cd-workflow'
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - main
+
+jobs:
+  # 
+  # Queue behind currently running workflows
+  # 
+  queue_workflow:
+    name: Queue Workflow
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ahmadnassri/action-workflow-queue@v1
+
+  #
+  # Get changed files
+  # What has changed will determine which jobs need to run
+  #
+  get_changed_files:
+    name: Check Changed Files
+    needs: queue_workflow
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      has_ui_changes: ${{ steps.ui-changes.outputs.any_changed || steps.ui-changes.outputs.any_deleted }}
+      has_docs_changes: ${{ steps.docs-changes.outputs.any_changed || steps.docs-changes.outputs.any_deleted }}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+      - name: Detect UI Changes
+        id: ui-changes
+        uses: tj-actions/changed-files@v35
+        with:
+          files: |
+            README.md
+
+  #
+  # Build Image
+  #
+  image_build:
+    name: Build Application Image
+    needs: get_changed_files
+    if: ${{ needs.get_changed_files.outputs.has_ui_changes == 'true' && github.ref_name == 'main'}}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: next-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ secrets.DEV_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.DEV_SERVICE_ACCOUNT }}
+      - name: Get tf outputs
+        uses: dflook/terraform-remote-state@v1
+        id: tf-outputs
+        with:
+          backend_type: gcs
+          backend_config: |
+            bucket=${{ secrets.STATE_BUCKET }}
+            prefix=dev
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: beta
+      - name: Configure Docker Client
+        run: |
+          gcloud auth configure-docker 
+          gcloud auth configure-docker ${{ steps.tf-outputs.outputs.REGION }}-docker.pkg.dev
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Set shared variables
+        run: |
+          echo "FULL_IMAGE_NAME=${{ steps.tf-outputs.outputs.REGION }}-docker.pkg.dev/${{ steps.tf-outputs.outputs.REPO_PROJECT_ID }}/${{ steps.tf-outputs.outputs.ARTIFACT_REPOSTIORY_NAME }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
+          echo "SHA_IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Check shared variables
+        run: |
+          echo env.FULL_IMAGE_NAME=${{ env.FULL_IMAGE_NAME }}
+          echo env.SHA_IMAGE_TAG=${{ env.SHA_IMAGE_TAG }}
+      - name: Build and push image
+        run: |
+          docker build -t ${{ env.FULL_IMAGE_NAME }}:${{ env.SHA_IMAGE_TAG }} .
+          docker push ${{ env.FULL_IMAGE_NAME}}:${{ env.SHA_IMAGE_TAG }}
+  #
+  # Vulnerability Scan
+  # 
+  vulnerability_scan:
+    name: Vulnerability Scan
+    needs: image_build
+    permissions: write-all
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: next-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ secrets.DEV_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.DEV_SERVICE_ACCOUNT }}
+      - name: Get tf outputs
+        uses: dflook/terraform-remote-state@v1
+        id: tf-outputs
+        with:
+          backend_type: gcs
+          backend_config: |
+            bucket=${{ secrets.STATE_BUCKET }}
+            prefix=dev
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: beta
+      - name: Set shared variables
+        run: |
+          echo "FULL_IMAGE_NAME=${{ steps.tf-outputs.outputs.REGION }}-docker.pkg.dev/${{ steps.tf-outputs.outputs.REPO_PROJECT_ID }}/${{ steps.tf-outputs.outputs.ARTIFACT_REPOSTIORY_NAME }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
+          echo "SHA_IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Check shared variables
+        run: |
+          echo env.FULL_IMAGE_NAME=${{ env.FULL_IMAGE_NAME }}
+          echo env.SHA_IMAGE_TAG=${{ env.SHA_IMAGE_TAG }}
+      - name: Get Image Digest
+        run: |
+          gcloud artifacts docker images describe ${{ env.FULL_IMAGE_NAME }}:${{ env.SHA_IMAGE_TAG }} --format 'value(image_summary.digest)' > ./image-sha.txt
+          cat image-sha.txt
+
+      - name: Kritis Cache
+        id: cache-kritis
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/go/bin
+          key: ${{ runner.os }}-kritis
+      - name: Build Kritis
+        if: steps.cache-kritis.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/grafeas/kritis.git
+          cd kritis/ && rm go.mod go.sum && go mod init github.com/grafeas/kritis && go mod tidy && go mod vendor
+          cd cmd/kritis/signer
+          CGO_ENABLED=0 GO11MODULE=on GOOS=linux GOARCH=amd64 go install
+          chmod +x /home/runner/go/bin/signer
+      - name: Run Kritis Check
+        run: |
+          cp /home/runner/go/bin/signer /usr/local/bin/
+          signer \
+            -mode=check-only -v=10 -alsologtostderr \
+            -image=${{ env.FULL_IMAGE_NAME }}@`cat ./image-sha.txt` \
+            -policy=../.github/kritis-policy.yml
+#
+# Attestation
+# 
+  attestation:
+    name: Attestation
+    needs: vulnerability_scan
+    permissions: write-all
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: next-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ secrets.DEV_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.DEV_SERVICE_ACCOUNT }}
+      - name: Get tf outputs
+        uses: dflook/terraform-remote-state@v1
+        id: tf-outputs
+        with:
+          backend_type: gcs
+          backend_config: |
+            bucket=${{ secrets.STATE_BUCKET }}
+            prefix=dev
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: beta
+      - name: Binary Auth Stage
+        run: |
+          gcloud beta container binauthz attestations sign-and-create \
+            --project=${{ steps.tf-outputs.outputs.REPO_PROJECT_ID }} \
+            --artifact-url="${{ env.FULL_IMAGE_NAME }}@`cat ./image-sha.txt`" \
+            --attestor=projects/${{ steps.tf-outputs.outputs.REPO_PROJECT_ID }}/attestors/attestor-${{ steps.tf-outputs.outputs.REPO_PROJECT_ID }} \
+            --keyversion-project=${{ steps.tf-outputs.outputs.REPO_PROJECT_ID }} \
+            --keyversion-location=${{ steps.tf-outputs.outputs.KEYRING_LOCATION }} \
+            --keyversion-keyring=${{ steps.tf-outputs.outputs.KEYRING_NAME }} \
+            --keyversion-key=${{ steps.tf-outputs.outputs.KEY_NAME }} \
+            --keyversion=${{ steps.tf-outputs.outputs.KEY_VERSION }}
+#
+# Deploy to Dev environment
+#
+  cloud_run_deploy:
+    name: Cloud Run Deployment
+    needs: attestation_vulnerability_scan
+    permissions: write-all
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: next-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ secrets.DEV_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.DEV_SERVICE_ACCOUNT }}
+      - name: Get tf outputs
+        uses: dflook/terraform-remote-state@v1
+        id: tf-outputs
+        with:
+          backend_type: gcs
+          backend_config: |
+            bucket=${{ secrets.STATE_BUCKET }}
+            prefix=dev
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: beta
+      - name: Set shared variables
+        run: |
+          echo "FULL_IMAGE_NAME=${{ steps.tf-outputs.outputs.REGION }}-docker.pkg.dev/${{ steps.tf-outputs.outputs.REPO_PROJECT_ID }}/${{ steps.tf-outputs.outputs.ARTIFACT_REPOSTIORY_NAME }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
+          echo "SHA_IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Check shared variables
+        run: |
+          echo env.FULL_IMAGE_NAME=${{ env.FULL_IMAGE_NAME }}
+          echo env.SHA_IMAGE_TAG=${{ env.SHA_IMAGE_TAG }}
+      - name: Cloud Run Deployment
+        uses: google-github-actions/deploy-cloudrun@v1
+        with:
+          project_id: ${{ steps.tf-outputs.outputs.RESOURCE_PROJECT }}
+          region: ${{ steps.tf-outputs.outputs.REGION }}
+          service: ${{ steps.tf-outputs.outputs.RESOURCE_CLOUD_RUN }}
+          image: ${{ env.FULL_IMAGE_NAME }}:${{ env.SHA_IMAGE_TAG }}
+          flags: |
+            --port=3000
+            --binary-authorization=default
+            --allow-unauthenticated
+            --ingress=internal-and-cloud-load-balancing
+            --cpu=1
+            --memory=512Mi
+            --min-instances=0
+            --max-instances=2
+            --service-account=${{ steps.tf-outputs.outputs.CLOUD_RUN_SA_EMAIL }}
+            --vpc-connector ${{ steps.tf-outputs.outputs.CONNECTOR_NAME }}
+          #env_vars: |
+          #secrets: |
+
+  #
+  # Tag image with its environment
+  #
+      - name: Tag image for env
+        run: |
+          gcloud artifacts docker tags add \
+          ${{ env.FULL_IMAGE_NAME }}:${{ env.SHA_IMAGE_TAG }} \
+          ${{ env.FULL_IMAGE_NAME }}:dev
