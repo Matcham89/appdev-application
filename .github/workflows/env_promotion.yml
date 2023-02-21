@@ -98,7 +98,7 @@ jobs:
           install_components: beta
       - name: Set shared variables
         run: |
-          echo "FULL_IMAGE_NAME=${{ steps.tf-outputs.outputs.REGION }}-docker.pkg.dev/${{ steps.tf-outputs.outputs.REPO_PROJECT_ID }}/${{ steps.tf-outputs.outputs.ARTIFACT_REPOSTIORY_NAME }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
+          echo "FULL_IMAGE_NAME=${{ steps.tf-outputs.outputs.REGION }}-docker.pkg.dev/${{ steps.tf-outputs.outputs.REPO_PROJECT_ID }}/${{ steps.tf-outputs.outputs.ARTIFACT_REPOSTIORY_NAME }}/${{ secrets.IMAGE_NAME }}" >> $GITHUB_ENV
           echo "SHA_IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - name: Check shared variables
         run: |
