@@ -129,7 +129,7 @@ jobs:
           signer \
             -mode=check-only -v=10 -alsologtostderr \
             -image=${{ env.FULL_IMAGE_NAME }}@`cat ./image-sha.txt` \
-            -policy=../.github/kritis-policy.yml
+            -policy=../kritis-policy.yml
 #
 # Attestation
 # 
