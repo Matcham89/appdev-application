@@ -162,6 +162,14 @@ jobs:
         uses: google-github-actions/setup-gcloud@v1
         with:
           install_components: beta
+      - name: Set shared variables
+        run: |
+          echo "FULL_IMAGE_NAME=${{ steps.tf-outputs.outputs.REGION }}-docker.pkg.dev/${{ steps.tf-outputs.outputs.REPO_PROJECT_ID }}/${{ steps.tf-outputs.outputs.ARTIFACT_REPOSTIORY_NAME }}/${{ secrets.IMAGE_NAME }}" >> $GITHUB_ENV
+          echo "SHA_IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Check shared variables
+        run: |
+          echo env.FULL_IMAGE_NAME=${{ env.FULL_IMAGE_NAME }}
+          echo env.SHA_IMAGE_TAG=${{ env.SHA_IMAGE_TAG }}
       - name: Get Image Digest
         run: |
           gcloud artifacts docker images describe ${{ env.FULL_IMAGE_NAME }}:${{ env.SHA_IMAGE_TAG }} --format 'value(image_summary.digest)' > ./image-sha.txt
