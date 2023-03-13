@@ -1,9 +1,5 @@
 name: 'Promotion Deployment'
 on:
-  push:
-    branches:
-    - prod
-    - test
   workflow_dispatch:
     inputs:
       tags:
