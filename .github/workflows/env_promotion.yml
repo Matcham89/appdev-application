@@ -1,7 +1,6 @@
 name: 'Promotion Deployment'
 on:
   workflow_dispatch:
-  push:
     branches:
     - prod
     - test
