@@ -1,9 +1,10 @@
 name: 'Promotion Deployment'
 on:
-  workflow_dispatch:
+  push:
     branches:
     - prod
     - test
+  workflow_dispatch:
     inputs:
       tags:
         description: 'Please Provide Image Tag (commit tag for application image)'
