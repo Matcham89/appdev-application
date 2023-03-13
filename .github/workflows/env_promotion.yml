@@ -7,7 +7,7 @@ on:
     - test
     inputs:
       tags:
-        description: 'Image tag for enviroment deployment'
+        description: 'Test scenario tags'
         required: true
         type: string
 
