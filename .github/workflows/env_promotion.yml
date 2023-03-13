@@ -4,6 +4,8 @@ on:
     branches:
     - prod
     - test
+    branches-ignore:
+    - main
     inputs:
       tags:
         description: 'Please Provide Image Tag (commit tag for application image)'
