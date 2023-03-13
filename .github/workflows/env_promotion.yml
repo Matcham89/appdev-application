@@ -6,9 +6,10 @@ on:
     - prod
     - test
     inputs:
-      tag:
+      tags:
         description: 'Image tag for enviroment deployment'
         required: true
+        type: string
 
 jobs:  
   # 
