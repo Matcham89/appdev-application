@@ -6,7 +6,7 @@ on:
     - test
     inputs:
       tags:
-        description: 'Test scenario tags'
+        description: 'Please Provide Image Tag (commit tag for application image)'
         required: true
         type: string
 
